@@ -1,5 +1,6 @@
 package com.example.lab13animaciones
 
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,6 +15,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,7 +29,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFFF5F5F5)
                 ) {
-                    AllExercisesScreen()
+                    Lab13App()
                 }
             }
         }
@@ -32,7 +37,25 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AllExercisesScreen() {
+fun Lab13App() {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = "main",
+        modifier = Modifier.fillMaxSize()
+    ) {
+        composable("main") {
+            MainScreen(navController = navController)
+        }
+        composable("game") {
+            EjercicioFinal()  // Pantalla completa del juego
+        }
+    }
+}
+
+@Composable
+fun MainScreen(navController: NavHostController) {
     val scrollState = rememberScrollState()
 
     Column(
@@ -51,7 +74,7 @@ fun AllExercisesScreen() {
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
 
-        Divider()
+        HorizontalDivider()
 
         // Ejercicio 1
         ExerciseSection(title = "Ejercicio 1: AnimatedVisibility") {
@@ -73,9 +96,22 @@ fun AllExercisesScreen() {
             Ejercicio4()
         }
 
-        // Ejercicio Final
-        ExerciseSection(title = "Ejercicio Final: Prototipo de Juego", isFullWidth = true) {
-            EjercicioFinal()
+        // BOTÓN IR AL JUEGO
+        Button(
+            onClick = { navController.navigate("game") },
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .height(64.dp)
+                .align(Alignment.CenterHorizontally),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C853)),
+            elevation = ButtonDefaults.buttonElevation(8.dp)
+        ) {
+            Text(
+                text = "IR AL JUEGO",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
         }
 
         Spacer(modifier = Modifier.height(50.dp))
