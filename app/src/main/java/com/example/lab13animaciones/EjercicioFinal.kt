@@ -1,6 +1,8 @@
 package com.example.lab13animaciones
 
 
+
+
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -14,87 +16,109 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp      // ESTE IMPORT FALTABA
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch  // ESTE IMPORT FALTABA
 
 @Composable
 fun EjercicioFinal() {
-    var playerX by remember { mutableStateOf(0.dp) }
-    var playerSize by remember { mutableStateOf(60.dp) }
-    var score by remember { mutableIntStateOf(0) }  // MEJOR: mutableIntStateOf
-    var enemyVisible by remember { mutableStateOf(false) }
+    // Estado del juego
+    var shipX by remember { mutableStateOf(150.dp) }
+    var score by remember { mutableIntStateOf(0) }
     var gameOver by remember { mutableStateOf(false) }
+    var enemyY by remember { mutableStateOf(-100.dp) }
+    var bulletY by remember { mutableStateOf(600.dp) }
+    var canShoot by remember { mutableStateOf(true) }
 
-    val animatedX by animateDpAsState(targetValue = playerX, spring(stiffness = 400f))
-    val animatedSize by animateDpAsState(targetValue = playerSize, spring(stiffness = 500f))
-    val enemyY by animateDpAsState(
-        targetValue = if (enemyVisible) 600.dp else (-100).dp,
-        animationSpec = tween(1200),
-        label = "enemyFall"
-    )
+    // Animaciones
+    val animatedShipX by animateDpAsState(targetValue = shipX, spring(stiffness = 400f))
+    val animatedEnemyY by animateDpAsState(targetValue = enemyY, tween(2000))
+    val animatedBulletY by animateDpAsState(targetValue = bulletY, tween(800))
 
+    // Generar enemigo
     LaunchedEffect(Unit) {
         while (!gameOver) {
-            delay(1800)
-            enemyVisible = true
-            delay(1300)
-            if (enemyVisible && kotlin.math.abs(animatedX.value - 150.dp.value) < 60) {
-                score++  // Ahora funciona bien
-                playerSize = 80.dp
-                delay(150)
-                playerSize = 60.dp
-            } else if (enemyVisible) {
-                gameOver = true
-            }
-            enemyVisible = false
+            delay(2000)
+            enemyY = -100.dp
+            delay(2000)
+            if (!gameOver) gameOver = true
         }
     }
+
+    // Scope para launch
+    val scope = rememberCoroutineScope()  // CORRECTO
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0D1B2A))
+            .background(Color(0xFF0A0A23))
     ) {
-        // Jugador (azul claro)
-        Box(
-            modifier = Modifier
-                .offset(x = animatedX, y = 500.dp)
-                .size(animatedSize)
-                .clip(CircleShape)
-                .background(Color.Cyan)
-                .clickable {
-                    playerX = if (playerX == 0.dp) 300.dp else 0.dp
-                }
-        )
-
-        // Enemigo (rojo)
-        AnimatedVisibility(
-            visible = enemyVisible,
-            enter = slideInVertically { -it },
-            exit = fadeOut()
-        ) {
+        // Enemigo
+        AnimatedVisibility(visible = enemyY > -100.dp, enter = slideInVertically { -it }, exit = fadeOut()) {
             Box(
                 modifier = Modifier
-                    .offset(x = 150.dp, y = enemyY)
+                    .offset(x = 150.dp, y = animatedEnemyY)
                     .size(50.dp)
-                    .background(Color.Red, CircleShape)
+                    .clip(CircleShape)
+                    .background(Color.Red)
             )
         }
+
+        // Bala
+        if (!canShoot && bulletY < 600.dp) {
+            Box(
+                modifier = Modifier
+                    .offset(x = animatedShipX, y = animatedBulletY)
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(Color.Cyan)
+            )
+        }
+
+        // Nave
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .offset(y = (-80).dp)
+                .size(60.dp)
+                .clip(CircleShape)
+                .background(Color(0xFF00FF88))
+                .clickable {
+                    if (!gameOver && canShoot) {
+                        shipX = if (shipX == 100.dp) 200.dp else 100.dp
+                        bulletY = 600.dp
+                        canShoot = false
+
+                        // CORRECTO: usar scope.launch
+                        scope.launch {
+                            delay(1000)
+                            canShoot = true
+                            bulletY = 600.dp
+                        }
+
+                        // Colisión
+                        if (kotlin.math.abs(animatedEnemyY.value - 300f) < 100f) {
+                            score++
+                            enemyY = -100.dp
+                        }
+                    }
+                }
+        )
 
         // Puntaje
         Text(
             text = "Puntaje: $score",
             color = Color.White,
-            fontSize = 24.sp,  // sp ahora funciona
+            fontSize = 24.sp,
             modifier = Modifier.align(Alignment.TopCenter).padding(24.dp)
         )
 
         // Game Over
-        if (gameOver) {
+        AnimatedVisibility(visible = gameOver, enter = fadeIn() + scaleIn(), exit = fadeOut()) {
             Text(
                 text = "¡GAME OVER!",
                 color = Color.Red,
-                fontSize = 36.sp,
+                fontSize = 40.sp,
                 modifier = Modifier.align(Alignment.Center)
             )
         }
